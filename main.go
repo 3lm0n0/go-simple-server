@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"text/template"
 )
 
 func formHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,24 +19,25 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Address = %s\n", address)
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/home" {
-		http.Error(w, "404 not found", http.StatusNotFound)
+func homeHandler(res http.ResponseWriter, req *http.Request) {
+	if req.URL.Path != "/home" {
+		http.Error(res, "404 not found", http.StatusNotFound)
 		return
 	}
-	if r.Method != "GET" {
-		http.Error(w, "method not allowed", http.StatusNotFound)
+	if req.Method != "GET" {
+		http.Error(res, "method not allowed", http.StatusNotFound)
 		return
 	}
-	fmt.Fprintf(w, "home page")
+	template, err := template.ParseFiles("./static/index.html")
+	if err != nil {
+		http.Error(res, "500 server error parsing files", http.StatusInternalServerError)
+	}
+	template.Execute(res, nil)
 }
 
 func main() {
-	filseServer := http.FileServer(http.Dir("./static"))
-	http.Handle("/", filseServer)
-	http.HandleFunc("/form", formHandler)
-	http.HandleFunc("home", homeHandler)
-
+	http.HandleFunc("/home", homeHandler)
+	// server
 	fmt.Printf("Starting server at port 8080\n")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
